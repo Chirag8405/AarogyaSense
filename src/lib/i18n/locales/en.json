@@ -183,8 +183,6 @@
         "filters": "Filters",
         "allStatuses": "All Statuses",
         "pendingReview": "Pending Review",
-        "underTreatment": "Under Treatment",
-        "resolved": "Resolved",
         "allRiskLevels": "All Risk Levels",
         "critical": "Critical",
         "high": "High",

@@ -38,6 +38,7 @@
 		}
 		
 		loadMyCases();
+		loadAshas();
 	});
 
 	// Tab State
@@ -68,6 +69,23 @@
 			console.error('Failed to load cases:', error);
 		} finally {
 			isLoadingCases = false;
+		}
+	}
+
+	// ASHA Workers
+	let ashaWorkers: any[] = [];
+	let selectedAshaId = '';
+
+	async function loadAshas() {
+		try {
+			const response = await apiClient.users.list({ role: 'ASHA' });
+			ashaWorkers = response.users;
+			// Auto-select first ASHA if available
+			if (ashaWorkers.length > 0) {
+				selectedAshaId = ashaWorkers[0].id;
+			}
+		} catch (error) {
+			console.error('Failed to load ASHA workers:', error);
 		}
 	}
 
@@ -362,23 +380,22 @@
 						priority: riskAssessment.priority
 					});
 
-					await apiClient.alerts.create({
-						caseId: result.id,
-						patientName,
-						patientPhone,
-						symptoms: selectedSymptoms,
-						riskLevel: riskAssessment.level,
-						riskScore: riskAssessment.score,
-						priority: riskAssessment.priority,
-						chwName: $authStore.user?.name || 'CHW'
-					});
-
-					saveMessage = `✅ Case saved & Alert sent! ID: ${result.id}`;
+					if (selectedAshaId) {
+						await apiClient.alerts.create({
+							caseId: result.id,
+							recipientId: selectedAshaId,
+							level: riskAssessment.level,
+							message: `High Risk Case: ${patientName} (${patientAge}) - ${riskAssessment.level} Risk. Symptoms: ${selectedSymptoms.join(', ')}`
+						});
+						saveMessage = `✅ Case saved & Alert sent! ID: ${result.id}`;
+					} else {
+						console.warn('No ASHA worker selected for alert');
+						saveMessage = `✅ Case saved (Alert skipped - No ASHA found). ID: ${result.id}`;
+					}
 				} catch (alertError) {
 					console.error('Failed to send alert:', alertError);
 				}
 			}
-			}, 2000);
 
 		} catch (error: any) {
 			console.error('Save error:', error);

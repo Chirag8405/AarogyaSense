@@ -1,7 +1,7 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import OpenAI from 'openai';
-import { OPENAI_API_KEY } from '$env/static/private';
+import Groq from 'groq-sdk';
+import { GROQ_API_KEY } from '$env/static/private';
 
 const SYSTEM_PROMPT = `You are an AI Health Assistant helping Community Health Workers (CHWs) in rural India assess patients. Your role is to:
 
@@ -97,23 +97,21 @@ interface Message {
 
 export const POST: RequestHandler = async ({ request }) => {
 	try {
-		if (!OPENAI_API_KEY) {
+		if (!GROQ_API_KEY || GROQ_API_KEY === 'your-groq-api-key-here') {
 			return json(
 				{
-					error: 'OpenAI API key not configured. Please add OPENAI_API_KEY to your .env file.',
-					setup_required: true
+					error: 'Groq API key not configured. Please add GROQ_API_KEY to your .env file.',
+					setup_required: true,
+					setup_url: 'https://console.groq.com/keys'
 				},
 				{ status: 500 }
 			);
 		}
 
-		// Initialize OpenAI with the API key
-		const openai = new OpenAI({
-			apiKey: OPENAI_API_KEY
-		});
+		// Initialize Groq with the API key
+		const groq = new Groq({ apiKey: GROQ_API_KEY });
 
 		const { messages, patientInfo, language } = await request.json();
-
 		if (!messages || !Array.isArray(messages)) {
 			return json({ error: 'Invalid request: messages array required' }, { status: 400 });
 		}
@@ -127,8 +125,8 @@ export const POST: RequestHandler = async ({ request }) => {
 		const responseLanguage = languageMap[language || 'en'] || 'English';
 		const languageInstruction = `\n\nIMPORTANT: Respond ONLY in ${responseLanguage}. Do not use English if the user is using ${responseLanguage}. All questions, assessments, and recommendations must be in ${responseLanguage}.`;
 
-		// Build conversation context
-		const conversationMessages: Message[] = [
+		// Build conversation messages for Groq
+		const conversationMessages: Array<{ role: string; content: string }> = [
 			{
 				role: 'system',
 				content: SYSTEM_PROMPT + languageInstruction
@@ -146,16 +144,15 @@ export const POST: RequestHandler = async ({ request }) => {
 		// Add conversation history
 		conversationMessages.push(...messages);
 
-		// Call OpenAI API
-		const completion = await openai.chat.completions.create({
-			model: 'gpt-4o-mini',
+		// Call Groq API
+		const completion = await groq.chat.completions.create({
+			model: 'llama-3.3-70b-versatile',
 			messages: conversationMessages,
 			temperature: 0.7,
-			max_tokens: 500,
-			response_format: { type: 'text' } // Allow both text and JSON
+			max_tokens: 1000
 		});
 
-		const aiResponse = completion.choices[0].message.content || '';
+		const aiResponse = completion.choices[0]?.message?.content || '';
 
 		// Check if AI provided an assessment (JSON response)
 		let assessmentComplete = false;
@@ -190,49 +187,48 @@ export const POST: RequestHandler = async ({ request }) => {
 					needs_escalation: assessment.needs_escalation || false,
 					escalate_to: assessment.escalate_to || '',
 					summary: assessment.summary || aiResponse
-				},
-				tokens_used: completion.usage?.total_tokens || 0
-			});
-		}
-
-		// Return conversational message
-		return json({
-			success: true,
-			message: aiResponse,
-			assessment_complete: false,
-			assessment: null,
-			tokens_used: completion.usage?.total_tokens || 0
+			}
 		});
+	}
+
+	// Return conversational message
+	return json({
+		success: true,
+		message: aiResponse,
+		assessment_complete: false,
+		assessment: null
+	});
 
 	} catch (error: any) {
-		console.error('OpenAI API Error:', error);
+		console.error('Groq API Error:', error);
 
-		if (error.code === 'insufficient_quota') {
+		if (error.message?.includes('API key') || error.message?.includes('API_KEY') || error.status === 401) {
 			return json(
 				{
-					error: 'OpenAI API quota exceeded. Please check your billing or upgrade your plan.',
+					error: 'Invalid Groq API key. Please check your GROQ_API_KEY in .env file.',
+					auth_error: true,
+					setup_url: 'https://console.groq.com/keys'
+				},
+				{ status: 401 }
+			);
+		}
+
+		if (error.message?.includes('quota') || error.message?.includes('rate limit') || error.status === 429) {
+			return json(
+				{
+					error: 'Groq API rate limit exceeded. Please try again in a few moments.',
 					quota_error: true
 				},
 				{ status: 429 }
 			);
 		}
 
-		if (error.code === 'invalid_api_key') {
-			return json(
-				{
-					error: 'Invalid OpenAI API key. Please check your OPENAI_API_KEY in .env file.',
-					auth_error: true
-				},
-				{ status: 401 }
-			);
-		}
-
 		return json(
 			{
-				error: error.message || 'Failed to process AI request',
-				details: error.toString()
-			},
-			{ status: 500 }
-		);
-	}
+			error: error.message || 'Failed to process AI request',
+			details: error.toString()
+		},
+		{ status: 500 }
+	);
+}
 };

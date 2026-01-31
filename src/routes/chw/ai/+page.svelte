@@ -453,7 +453,7 @@
 		<header class="bg-white shadow-sm border-b">
 			<div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
 				<div class="flex items-center gap-4">
-					<a href="/" class="w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center hover:bg-green-700 transition-colors">
+					<a href="/" aria-label="Home" class="w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center hover:bg-green-700 transition-colors">
 						<svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
 						</svg>
@@ -478,8 +478,9 @@
 					<div class="space-y-4">
 						<div class="grid grid-cols-2 gap-4">
 							<div>
-								<label class="block text-sm font-medium text-gray-700 mb-2">Patient Name *</label>
+								<label for="patient-name" class="block text-sm font-medium text-gray-700 mb-2">Patient Name *</label>
 								<input
+									id="patient-name"
 									type="text"
 									bind:value={patientName}
 									placeholder="Enter full name"
@@ -488,8 +489,9 @@
 							</div>
 							
 							<div>
-								<label class="block text-sm font-medium text-gray-700 mb-2">Age *</label>
+								<label for="patient-age" class="block text-sm font-medium text-gray-700 mb-2">Age *</label>
 								<input
+									id="patient-age"
 									type="number"
 									bind:value={patientAge}
 									placeholder="Age"
@@ -502,8 +504,9 @@
 						
 						<div class="grid grid-cols-2 gap-4">
 							<div>
-								<label class="block text-sm font-medium text-gray-700 mb-2">Gender *</label>
+								<label for="patient-gender" class="block text-sm font-medium text-gray-700 mb-2">Gender *</label>
 								<select
+									id="patient-gender"
 									bind:value={patientGender}
 									class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
 								>
@@ -514,8 +517,9 @@
 							</div>
 							
 							<div>
-								<label class="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+								<label for="patient-phone" class="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
 								<input
+									id="patient-phone"
 									type="tel"
 									bind:value={patientPhone}
 									placeholder="+91 XXXXX XXXXX"
@@ -525,8 +529,9 @@
 						</div>
 						
 						<div>
-							<label class="block text-sm font-medium text-gray-700 mb-2">Village/Location</label>
+							<label for="patient-village" class="block text-sm font-medium text-gray-700 mb-2">Village/Location</label>
 							<input
+								id="patient-village"
 								type="text"
 								bind:value={patientVillage}
 								placeholder="Enter village or location"
@@ -536,7 +541,7 @@
 
 						<!-- Image Upload -->
 						<div>
-							<label class="block text-sm font-medium text-gray-700 mb-2">Patient Images (Optional)</label>
+							<label for="image-upload" class="block text-sm font-medium text-gray-700 mb-2">Patient Images (Optional)</label>
 							<div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-green-500 transition-colors">
 								<input
 									type="file"
@@ -562,6 +567,7 @@
 											<img src={image.url} alt="Patient" class="w-full h-32 object-cover rounded-lg" />
 											<button
 												onclick={() => removeImage(index)}
+												aria-label="Remove image"
 												class="absolute top-2 right-2 bg-red-600 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
 											>
 												<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -576,8 +582,8 @@
 
 						<!-- Voice Recording -->
 						<div>
-							<label class="block text-sm font-medium text-gray-700 mb-2">Voice Note (Optional)</label>
-							<div class="border border-gray-300 rounded-lg p-4">
+							<label for="voice-recording" class="block text-sm font-medium text-gray-700 mb-2">Voice Note (Optional)</label>
+							<div id="voice-recording" class="border border-gray-300 rounded-lg p-4">
 								{#if !audioRecording}
 									{#if !isRecording}
 										<button
@@ -612,6 +618,7 @@
 										</div>
 										<button
 											onclick={removeAudio}
+											aria-label="Remove audio recording"
 											class="text-red-600 hover:text-red-700"
 										>
 											<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

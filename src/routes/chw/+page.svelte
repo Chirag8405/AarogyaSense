@@ -52,6 +52,11 @@
 	let diagnosisComplete = false;
 	let questionCount = 0;
 
+	// Voice Input State
+	let isListening = false;
+	let speechRecognition: any = null;
+	let voiceSupported = false;
+
 	// Diagnosis Result
 	let diagnosisResult = {
 		priority: 0,
@@ -71,6 +76,58 @@
 		{ name: 'Priya Devi', location: 'Village B (3 km)', phone: '+919876543211' },
 		{ name: 'Sunita Kumari', location: 'Village C (5 km)', phone: '+919876543212' }
 	];
+
+	// Voice Input Functions
+	function initSpeechRecognition() {
+		const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+		if (SpeechRecognition) {
+			voiceSupported = true;
+			speechRecognition = new SpeechRecognition();
+			speechRecognition.continuous = false;
+			speechRecognition.interimResults = true;
+			speechRecognition.lang = 'en-IN';
+
+			speechRecognition.onresult = (event: any) => {
+				let transcript = '';
+				for (let i = event.resultIndex; i < event.results.length; i++) {
+					transcript += event.results[i][0].transcript;
+				}
+				userInput = transcript;
+			};
+
+			speechRecognition.onend = () => {
+				isListening = false;
+			};
+
+			speechRecognition.onerror = (event: any) => {
+				console.error('Speech recognition error:', event.error);
+				isListening = false;
+			};
+		}
+	}
+
+	function toggleVoiceInput() {
+		if (!speechRecognition) {
+			initSpeechRecognition();
+		}
+
+		if (!speechRecognition) {
+			alert('Voice input is not supported in your browser. Please use Chrome or Edge.');
+			return;
+		}
+
+		if (isListening) {
+			speechRecognition.stop();
+			isListening = false;
+		} else {
+			try {
+				speechRecognition.start();
+				isListening = true;
+			} catch (error) {
+				console.error('Failed to start speech recognition:', error);
+			}
+		}
+	}
 
 	// Image Upload Handler
 	async function handleImageUpload(event: Event) {
@@ -931,17 +988,30 @@
 							</div>
 						{/if}
 
-						<div class="flex gap-3">
+						<div class="flex gap-2">
 							<input
 								type="text"
 								bind:value={userInput}
 								onkeydown={(e) => e.key === 'Enter' && handleSendMessage()}
 								disabled={!awaitingResponse || aiThinking}
 								placeholder={awaitingResponse
-									? 'Type your response...'
+									? (isListening ? 'Listening... speak now' : 'Type or tap mic to speak...')
 									: 'Please wait for AI question...'}
-								class="flex-1 px-4 py-3 border border-border rounded-lg focus:ring-2 focus:ring-brand focus:border-transparent disabled:bg-surface-soft"
+								class="flex-1 px-4 py-3 border border-border rounded-lg focus:ring-2 focus:ring-brand focus:border-transparent disabled:bg-surface-soft {isListening ? 'border-red-500 ring-2 ring-red-200' : ''}"
 							/>
+							<!-- Voice Input Button -->
+							<button
+								type="button"
+								onclick={toggleVoiceInput}
+								disabled={!awaitingResponse || aiThinking}
+								title={isListening ? 'Stop listening' : 'Start voice input'}
+								class="px-4 py-3 rounded-lg font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center
+									{isListening ? 'bg-red-500 text-white animate-pulse' : 'bg-gray-200 text-gray-700 hover:bg-brand/10 hover:text-brand'}"
+							>
+								<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
+								</svg>
+							</button>
 							<button
 								onclick={handleSendMessage}
 								disabled={!awaitingResponse || aiThinking || !userInput.trim()}

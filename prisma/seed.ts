@@ -63,16 +63,29 @@ async function main() {
   ];
 
   for (const u of users) {
-    const user = await prisma.user.upsert({
-      where: { email: u.email },
-      update: {
-        password: u.password,
-        role: u.role,
-        name: u.name
-      },
-      create: u,
+    // Check if user exists
+    const existingUser = await prisma.user.findUnique({
+      where: { email: u.email }
     });
-    console.log(`Created/Updated user with id: ${user.id}`);
+
+    if (existingUser) {
+      // Update existing user
+      const user = await prisma.user.update({
+        where: { email: u.email },
+        data: {
+          password: u.password,
+          role: u.role,
+          name: u.name
+        }
+      });
+      console.log(`Updated user with id: ${user.id}`);
+    } else {
+      // Create new user
+      const user = await prisma.user.create({
+        data: u
+      });
+      console.log(`Created user with id: ${user.id}`);
+    }
   }
 
   console.log('Seeding finished.');

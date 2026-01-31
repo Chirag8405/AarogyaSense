@@ -440,6 +440,18 @@ class APIClient {
 			});
 		}
 	};
+
+	/**
+	 * Users endpoints
+	 */
+	users = {
+		list: async (params?: { role?: string; location?: string }) => {
+			const query = new URLSearchParams(params as any).toString();
+			return this.request<{ users: any[] }>(
+				`/api/users${query ? `?${query}` : ''}`
+			);
+		}
+	};
 }
 
 // Export singleton instance
